@@ -9,9 +9,20 @@ from kit import *
 def main():
 
 
+
+    make_new_kit( "Iceland" )
+    my_kit = set_working_kit( 'Iceland' )
+    add_item( 'wallet', Item( 'Wallet', 'Rucksack', False, None, 70 ) )
+    add_item( 'coat', Item( 'Wooly Coat','Suitcase', False, None, 420 ) )
+    pack_item( 'wallet' )
+    pack_item( 'coat' )
+    unpack_item( 'wallet' )
+    pack_all()
+    print str(check_weight())
+    save_working_kit()
+
+
     make_new_kit( "Thailand" )
-    all_kits = get_list_of_kits()
-    my_kit = set_working_kit( all_kits[0] )
     add_item( 'wallet', Item( 'Wallet', 'rucksack', False, None, 70 ) )
     add_item( 'towel', Item( 'Towel','rucksack', False, None, 110 ) )
     pack_item( 'wallet' )
@@ -19,6 +30,9 @@ def main():
     unpack_item( 'wallet' )
     pack_all()
     print str(check_weight())
+    save_working_kit()
+
+
     print "*******************************************************"
     make_new_kit( "India" )
     all_kits = get_list_of_kits()
@@ -29,12 +43,39 @@ def main():
     print str(check_weight())
     print_list()
     pack_all()
+    unpack_item( 'camera' )
+    save_working_kit()
+
+
+
+
     print "*******************************************************"
     set_working_kit( 'Thailand' )
-    unpack_item( 'towel' )
+    #unpack_item( 'towel' )
     print "Total weight = "+str( check_weight() )+ "g"
     p, u = get_packed_unpacked()
-    print p[0].name
+
+    save_working_kit()
+    print get_saved_kits()
+    load_kit("Thailand")
+    print "\n\n"
+    squish()
+    print "\n\n\n"
+    unsquish( 'India' )
+    print_list()
+
+
+    print get_saved_kits()
+    load_kit( 'Iceland' )
+    print_list()
+    print"\n\n"
+    unpack_item( 'coat' )
+    save_working_kit()
+    print"\n\n"
+    print_list()
+    print"\n\n"
+
+
     pass
 
 

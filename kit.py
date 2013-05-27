@@ -1,9 +1,18 @@
 
 import datetime
 import collections
-import json
+import jsonpickle
+import glob
 
 Item = collections.namedtuple( 'Item', [ 'name', 'location', 'packed', 'when_added', 'weight' ] )
+
+def check_kit( fn ):
+    def check():
+        if manager.current_kit:
+            return fn()
+        else:
+            return
+    return check()
 
 
 class manager:
@@ -26,6 +35,23 @@ def set_working_kit( name ):
     manager.current_kit = manager.list_of_all_kits[name]
     return manager.current_kit
 
+def save_working_kit():
+    return squish()
+
+def load_kit( kit_name ):
+    return unsquish( kit_name )
+
+def get_saved_kits():
+    files = glob.glob("saved\\*.txt")
+    names = []
+    for f in files:
+        n = f.split("\\")[-1]
+        names.append( n[:-4] )
+    #print names
+    return names
+
+
+
 def useful_date( thedate ):
     ret = []
     date_and_time = ( str(thedate).split(" ") )
@@ -35,8 +61,8 @@ def useful_date( thedate ):
     md = ymd[5:]
     hm = hms[:-3]
 
-    #ret.extend( ret.index(-1).split)
     return md, hm
+
 
 def add_item( key, item ):
     if manager.current_kit != None:
@@ -45,6 +71,7 @@ def add_item( key, item ):
 def remove_item( key ):
     if manager.current_kit != None:
         manager.current_kit.remove_item( key )
+
 
 def pack_item( itemkey, location=None ):
     if manager.current_kit != None:
@@ -90,17 +117,75 @@ def backup():
         manager.current_kit.backup()
 
 
+def squish():
+    #turn a Kit object into a flat text stream that can be saved and easily reimported
+    if manager.current_kit != None:
+        k = manager.current_kit
+    else:
+        return
+
+    squishlist = []
+    #0 name
+    squishlist.append( str(k.name) )
+    #1 created date
+    squishlist.append( str(k.created_date) )
+    #2 last fully packed
+    squishlist.append( str(k.last_full_date) )
+    #3-x items
+    for key, item in k.items.iteritems():
+        itemstr = str(key)+","+ str(item.name)+","+ str(item.location)+","+ str(item.packed)+","+ str(item.when_added)+","+ str(item.weight)
+        squishlist.append( itemstr )
+    squishstr = "\n".join(squishlist)
+    #print squishstr
+    filename = manager.current_kit.name
+    filename = "saved\\" + filename.strip() + ".txt"
+    print filename
+    f = open(filename, 'w+')
+    #print manager.current_kit
+    f.write(squishstr)
+    f.close
+    return squishstr
+
+def unsquish( kit_name ):
+    #convert a squished flat text file into an identical representation of a kit
+    filename = "saved/"+str(kit_name)+".txt"
+    #print filename
+    f = open( filename, 'r' )
+    #extract items from squished text
+    squishlist = f.readlines()
+    f.close()
+    #print squishlist
+    length = len(squishlist)
+
+    loaded_kit = Kit( squishlist[0].strip() )
+    loaded_kit.created_date = squishlist[1].strip()
+    loaded_kit.last_full_date = squishlist[2].strip()
+
+    for i in range(3, length):
+        items = squishlist[i].strip().split(",")
+        print items
+        loaded_kit.items[items[0]] = Item(items[1],items[2],items[3],items[4],items[5])
+
+    manager.current_kit = loaded_kit
+    f.close()
+    return
+
 class Kit:
     def __init__( self, name ):
 
         # when was this kit list created
         self.created_date = str(datetime.datetime.now())
+        self.name = name
         # when was the kit last fully packed
         self.last_full_date = 0
         self.items = {}
         self.verbose = True
         if self.verbose:
             print ( "Created a new kit list: " + name )
+        return
+
+    def reimport( self, pick ):
+        #self.add_item( ) TODO
         return
 
     def add_item( self, key, item ):
