@@ -1,174 +1,138 @@
 
 import datetime
 import collections
-import jsonpickle
 import glob
+import pickle
 
-Item = collections.namedtuple( 'Item', [ 'name', 'location', 'packed', 'when_added', 'weight' ] )
+Item = collections.namedtuple( 'Item', 
+    [ 'name', 'location', 'packed', 'when_added', 'weight' ] )
 
+
+def verbosity( fn ):
+    def output( *arg ):
+        out = fn(*arg)
+        if manager.verbose:
+            print out
+        return out
+    return output
+
+
+#crap decorator
 def check_kit( fn ):
-    def check():
-        if manager.current_kit:
-            return fn()
+    def check( *arg ):
+        if manager.current_kit != None:
+            return fn( *arg )
         else:
-            return
-    return check()
+            return "No working kit defined"
+            return None
+    return check
 
 
 class manager:
-    list_of_all_kits = {}
     current_kit = None
+    verbose = False
     def __init__( self ):
         current_kit = None
+        verbose = False
         return
 
 
+@verbosity
 def make_new_kit( name ):
-    manager.list_of_all_kits[ name ] = Kit( name )
-    return manager.list_of_all_kits[ name ]
-    return
-
-def get_list_of_kits():
-    return manager.list_of_all_kits.keys()
-
-def set_working_kit( name ):
-    manager.current_kit = manager.list_of_all_kits[name]
+    manager.current_kit = Kit( name )
     return manager.current_kit
 
+@check_kit 
+@verbosity
 def save_working_kit():
-    return squish()
+    f_name = "saved/"+str(manager.current_kit.name)+".p"
+    return pickle.dump( manager.current_kit, open( f_name, "wb" ) )
 
+@verbosity
 def load_kit( kit_name ):
-    return unsquish( kit_name )
+    f_name = "saved/"+str(kit_name)+".p"
+    manager.current_kit = pickle.load( open( f_name, "rb" ) )
+    return manager.current_kit
 
+@verbosity
 def get_saved_kits():
-    files = glob.glob("saved\\*.txt")
+    files = glob.glob("saved\\*.p")
     names = []
     for f in files:
         n = f.split("\\")[-1]
-        names.append( n[:-4] )
-    #print names
+        names.append( n[:-2] )
     return names
 
-
-
+@verbosity
 def useful_date( thedate ):
     ret = []
     date_and_time = ( str(thedate).split(" ") )
     ymd = date_and_time[0]
     hms = date_and_time[1].split(".")[0]
-
     md = ymd[5:]
     hm = hms[:-3]
-
     return md, hm
 
-
+@check_kit
+@verbosity
 def add_item( key, item ):
-    if manager.current_kit != None:
-        manager.current_kit.add_item( key, item )
+    return manager.current_kit.add_item( key, item )
 
+@check_kit
+@verbosity
 def remove_item( key ):
-    if manager.current_kit != None:
-        manager.current_kit.remove_item( key )
+    return manager.current_kit.remove_item( key )
 
-
+@check_kit
+@verbosity
 def pack_item( itemkey, location=None ):
-    if manager.current_kit != None:
-        manager.current_kit.pack_item( itemkey, location )
+    return manager.current_kit.pack_item( itemkey, location )
 
+@check_kit
+@verbosity
 def unpack_item( itemkey ):
-    if manager.current_kit != None:
-        manager.current_kit.unpack_item( itemkey )
+    return manager.current_kit.unpack_item( itemkey )
 
+@check_kit
+@verbosity
 def move_item( itemkey, new_loc ):
-    if manager.current_kit != None:
-        manager.current_kit.move_item( itemkey, new_loc )
+    return manager.current_kit.move_item( itemkey, new_loc )
 
+@check_kit
+@verbosity
 def get_packed_unpacked():
     return manager.current_kit.get_packed_unpacked()
 
+@check_kit
+@verbosity
 def print_list( packed_first = True ):
-    if manager.current_kit != None:
-        manager.current_kit.print_list(packed_first)
+    return manager.current_kit.print_list(packed_first)
 
+@check_kit
+@verbosity
 def pack_all():
-    if manager.current_kit != None:
-        manager.current_kit.pack_all()
+    return manager.current_kit.pack_all()
 
+@check_kit
+@verbosity
 def unpack_all():
-    if manager.current_kit != None:
-        manager.current_kit.unpack_all()
+    return manager.current_kit.unpack_all()
 
+@check_kit
+@verbosity
 def check_weight():
-    if manager.current_kit != None:
-        return manager.current_kit.check_weight()
+    return manager.current_kit.check_weight()
 
+@check_kit
+@verbosity
 def check_full():
-    if manager.current_kit != None:
-        manager.current_kit.check_full()
+    return manager.current_kit.check_full()
 
+@check_kit
+@verbosity
 def get_fullness():
-    if manager.current_kit != None:
-        manager.current_kit.get_fullness()
+    return manager.current_kit.get_fullness()
 
-def backup():
-    if manager.current_kit != None:
-        manager.current_kit.backup()
-
-
-def squish():
-    #turn a Kit object into a flat text stream that can be saved and easily reimported
-    if manager.current_kit != None:
-        k = manager.current_kit
-    else:
-        return
-
-    squishlist = []
-    #0 name
-    squishlist.append( str(k.name) )
-    #1 created date
-    squishlist.append( str(k.created_date) )
-    #2 last fully packed
-    squishlist.append( str(k.last_full_date) )
-    #3-x items
-    for key, item in k.items.iteritems():
-        itemstr = str(key)+","+ str(item.name)+","+ str(item.location)+","+ str(item.packed)+","+ str(item.when_added)+","+ str(item.weight)
-        squishlist.append( itemstr )
-    squishstr = "\n".join(squishlist)
-    #print squishstr
-    filename = manager.current_kit.name
-    filename = "saved\\" + filename.strip() + ".txt"
-    print filename
-    f = open(filename, 'w+')
-    #print manager.current_kit
-    f.write(squishstr)
-    f.close
-    return squishstr
-
-def unsquish( kit_name ):
-    #convert a squished flat text file into an identical representation of a kit
-    filename = "saved/"+str(kit_name)+".txt"
-    #print filename
-    f = open( filename, 'r' )
-    #extract items from squished text
-    squishlist = f.readlines()
-    f.close()
-    #print squishlist
-    length = len(squishlist)
-
-    loaded_kit = Kit( squishlist[0].strip() )
-    loaded_kit.created_date = squishlist[1].strip()
-    loaded_kit.last_full_date = squishlist[2].strip()
-
-    for i in range(3, length):
-        items = squishlist[i].strip().split(",")
-        print items
-        loaded_kit.items[items[0]] = Item(items[1],items[2],items[3],items[4],items[5])
-
-    manager.current_kit = loaded_kit
-    f.close()
-    return
 
 class Kit:
     def __init__( self, name ):
@@ -204,8 +168,8 @@ class Kit:
 
     def pack_item( self, itemkey, location=None ):
         #set an items packed state to true
-        olditem = self.items[itemkey]
-        newitem = Item( olditem.name, location if location else olditem.location, True, str(datetime.datetime.now()), olditem.weight )
+        oi = self.items[itemkey]
+        newitem = Item( oi.name, location if location else oi.location, True, str(datetime.datetime.now()), oi.weight )
         self.items[itemkey] = newitem
         if self.verbose:
             print "Packed "+str( itemkey )
@@ -215,8 +179,8 @@ class Kit:
 
     def unpack_item( self, itemkey ):
         #set an items packed state to false
-        olditem = self.items[itemkey]
-        newitem = Item( olditem.name, olditem.location, False, olditem.when_added, olditem.weight )
+        oi = self.items[itemkey]
+        newitem = Item( oi.name, oi.location, False, oi.when_added, oi.weight )
         self.items[itemkey] = newitem
         if self.verbose:
             print "Unpacked "+str( itemkey )
@@ -224,8 +188,8 @@ class Kit:
 
     def move_item( self, itemkey, new_loc ):
         #update where this item is stored (does not affect packed state)
-        olditem = self.items[itemkey]
-        newitem = Item( olditem.name, new_loc, olditem.packed, olditem.when_added, olditem.weight )
+        oi = self.items[itemkey]
+        newitem = Item( oi.name, new_loc, oi.packed, oi.when_added, oi.weight )
         self.items[itemkey] = newitem
         return
 
@@ -242,6 +206,7 @@ class Kit:
         def print_item( it ):
             if it.packed:
                 print "\t"+str(it.name)+" packed in your "+str(it.location)+" on "+str( useful_date(it.when_added))
+                #print "\t%s packed in your %s on %s.", str(it.name), str(it.location), str( useful_date(it.when_added))
             else:
                 print "\t"+str(it.name)+" unpacked from your "+str(it.location)+" on "+str( useful_date(it.when_added))
 
@@ -312,7 +277,4 @@ class Kit:
                 packed += 1
         ret = (packed*100)/size
         return ret
-
-    def backup( self ):
-        return json.dumps(self.items)
 
