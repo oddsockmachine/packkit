@@ -1,0 +1,1 @@
+Started to create an app for keeping track of luggage items while travelling. Worked well. Then realised that 101 of them exist on the app store... Oh well!
